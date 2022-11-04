@@ -1,24 +1,50 @@
-# rpi4-uboot
+# Almost fake, but usable, TPM2.0 support for Raspberry PI 4
 
 The purpose of this repository is not to securely enable TPM 2.0 on Raspberry PI 4, this is impossible without modifying the proprietary bootloader. What I want to accomplish is a configuration that allows the operating system to work as if it were on a system that fully supports TPM 2.0, for testing purposes.
 
+That said:
+
+- PCRs from 0 to 3 and PCR6 are completely faked with random data, stored per device to preserve it.
+- PCR4, PCR5, and PCR7 may be almost fine, even if not sure about it and it's not the purpose of this work.
+- PCR8 and PCR9 are fine as they are extended by this u-boot script, even if not enforced and not trusted, and this part could be taken as a starting point for a real implementation.
+
 A big thank you to https://github.com/joholl/rpi4-uboot-tpm which I used to start.
 
-# Compile
+## Compile
 
-## Original Ubuntu 22.04 boot.scr:
+You can compile u-boot 2200.10 with the .config in u-boot/config.
 
-```
-mkimage -A arm64 -T script -C none -n "Boot script" -d bootscr.rpi boot.scr
-```
+There is a prebuilt "u-boot.bin" image in build/.
 
-## Customized Ubuntu 22.04 boot.scr with TPM "fake" support:
+Now you can "compile" the customized Ubuntu 22.04 bootscr.rpi with TPM "fake" support:
 
 ```
 mkimage -A arm64 -T script -C none -n "Boot script" -d bootscr-tpm.rpi boot.scr.uimg
 ```
 
-# Results
+There is a prebuilt "boot.scr.uimg" image in build/.
+
+You can compile the tpm-soft-spi.dts overlays with:
+
+```
+dtc -O dtb -b 0 -@ overlays/tpm-soft-spi.dts -o tpm-soft-spi.dtbo
+```
+
+There is a prebuilt "tpm-soft-spi.dtbo" image in build/.
+
+## Decompile from scr to script with:
+
+```
+dd if=boot.scr of=boot.source.scr bs=72 skip=1
+```
+
+## Generate fake data for initial PCRs:
+
+```
+dd if=/dev/random of=/boot/firmware/rpi-fake-pcr.bin bs=32 count=5
+```
+
+## Results
 
 ```
 root@despico:~# uname -a
@@ -66,19 +92,7 @@ root@despico:~# tpm2_pcrread | tail -n 25
     23: 0x0000000000000000000000000000000000000000000000000000000000000000
 ```
 
-# Decompile from scr to script with:
-
-```
-dd if=boot.scr of=boot.source.scr bs=72 skip=1
-```
-
-# Generate fake data for initial PCRs:
-
-```
-dd if=/dev/random of=/boot/firmware/rpi-fake-pcr.bin bs=32 count=5
-```
-
-# Note
+## Note
 
 On ubuntu the default boot script is boot.scr, but boot.scr.uimg prevail if present.
 
