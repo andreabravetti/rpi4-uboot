@@ -8,6 +8,10 @@ then
     dd if=/dev/random of=/boot/firmware/rpi-fake-pcr.bin bs=32 count=5
 fi
 
-cp build/boot.scr.uimg /boot/firmware/
+# Better to use flash-kernel to use placeholders and persist to update:
+rm -f /boot/firmware/boot.scr /boot/firmware/boot.scr.uimg
+cp bootscr-tpm.rpi /etc/flash-kernel/bootscript/bootscr.rpi
+flash-kernel
+
 cp build/u-boot.bin /boot/firmware/
 cp build/tpm-soft-spi.dtbo /boot/firmware/overlays/

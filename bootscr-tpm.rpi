@@ -17,8 +17,8 @@ hash sha256 0x04000000 0x${filesize} *0x10000000
 tpm2 pcr_extend 4 0x10000000
 tpm2 pcr_extend 7 0x10000000
 
-size mmc 0:1 boot.scr.uimg
-load mmc 0:1 0x04000000 boot.scr.uimg 0x${filesize}
+size mmc 0:1 boot.scr
+load mmc 0:1 0x04000000 boot.scr 0x${filesize}
 hash sha256 0x04000000 0x${filesize} *0x10000000
 tpm2 pcr_extend 5 0x10000000
 tpm2 pcr_extend 7 0x10000000
