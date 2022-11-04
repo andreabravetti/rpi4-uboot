@@ -15,3 +15,15 @@ flash-kernel
 
 cp build/u-boot.bin /boot/firmware/
 cp build/tpm-soft-spi.dtbo /boot/firmware/overlays/
+
+cat <<EOF
+
+Don't forget to change config.txt like this:
+
+[all]
+kernel=u-boot.bin
+dtoverlay=tpm-soft-spi
+#kernel=vmlinuz
+#cmdline=cmdline.txt
+#initramfs initrd.img followkernel
+EOF
