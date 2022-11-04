@@ -20,7 +20,6 @@ mkimage -A arm64 -T script -C none -n "Boot script" -d bootscr-tpm.rpi boot.scr.
 
 # Results
 
-
 ```
 root@despico:~# uname -a
 Linux despico 5.15.0-1017-raspi #19-Ubuntu SMP PREEMPT Fri Oct 14 08:22:47 UTC 2022 aarch64 aarch64 aarch64 GNU/Linux
@@ -66,3 +65,21 @@ root@despico:~# tpm2_pcrread | tail -n 25
     22: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     23: 0x0000000000000000000000000000000000000000000000000000000000000000
 ```
+
+# Decompile from scr to script with:
+
+```
+dd if=boot.scr of=boot.source.scr bs=72 skip=1
+```
+
+# Generate fake data for initial PCRs:
+
+```
+dd if=/dev/random of=/boot/firmware/rpi-fake-pcr.bin bs=32 count=5
+```
+
+# Note
+
+On ubuntu the default boot script is boot.scr, but boot.scr.uimg prevail if present.
+
+You need to use boot.scr.uimg else flash-kernel will overwrite your file with defaults.

@@ -1,7 +1,3 @@
-#
-# flash-kernel: bootscr.rpi
-#
-
 # Ubuntu Classic RPi U-Boot script (for armhf and arm64)
 
 # Expects to be called with the following environment variables set:
@@ -24,10 +20,10 @@ else
 fi
 fdt get value bootargs /chosen bootargs
 
-setenv bootargs " ${bootargs} quiet splash"
+setenv bootargs "@@LINUX_KERNEL_CMDLINE_DEFAULTS@@ ${bootargs} @@LINUX_KERNEL_CMDLINE@@"
+@@UBOOT_ENV_EXTRA@@
 
-
-
+@@UBOOT_PREBOOT_EXTRA@@
 
 setenv kernel_filename vmlinuz
 setenv core_state "/uboot/ubuntu/boot.sel"
@@ -111,4 +107,3 @@ for pathprefix in ${fk_image_locations}; do
     done
   fi
 done
-

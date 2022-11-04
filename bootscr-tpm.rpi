@@ -1,22 +1,10 @@
-# On ubuntu the default boot script is boot.scr, but boot.scr.uimg prevail if present.
-# You need to use boot.scr.uimg else flash-kernel will overwrite your file with defaults.
-
-# Compile with:
-# mkimage -A arm64 -T script -C none -n "Boot script" -d bootscr.rpi boot.scr
-# mkimage -A arm64 -T script -C none -n "Boot script" -d bootscr-tpm.rpi boot.scr.uimg
-
-# Decompile from scr to script with:
-# dd if=boot.scr of=boot.scr bs=72 skip=1
-
-# Generate fake data for initial PCRs:
-# dd if=/dev/random of=boot.sec bs=32 count=5
-
+##############################################################
 tpm2 init
 tpm2 startup TPM2_SU_CLEAR
 
-# The u-boot.sec file is a storege for fake keys used for
+# The rpi-fake-pcr.bin file is a storege for fake keys used for
 # PCRs 0, 1, 2, 3 and 6 since RPi4 does not have secure boot:
-load mmc 0:1 0x10000000 u-boot.sec
+load mmc 0:1 0x10000000 rpi-fake-pcr.bin
 tpm2 pcr_extend 0 0x10000000
 tpm2 pcr_extend 1 0x10000020
 tpm2 pcr_extend 2 0x10000040
@@ -34,31 +22,7 @@ load mmc 0:1 0x04000000 boot.scr.uimg 0x${filesize}
 hash sha256 0x04000000 0x${filesize} *0x10000000
 tpm2 pcr_extend 5 0x10000000
 tpm2 pcr_extend 7 0x10000000
-
-
-# PCR8 Hash of the kernel command line
-
-size mmc 0:1 vmlinuz
-load mmc 0:1 0x04000000 vmlinuz 0x${filesize}
-hash sha256 0x04000000 0x${filesize} *0x10000000
-tpm2 pcr_extend 8 0x10000000
-
-size mmc 0:1 cmdline.txt
-load mmc 0:1 0x04000000 cmdline.txt 0x${filesize}
-hash sha256 0x04000000 0x${filesize} *0x10000000
-tpm2 pcr_extend 8 0x10000000
-
-
-# PCR9 Hash of the initrd
-
-size mmc 0:1 initrd.img
-load mmc 0:1 0x04000000 initrd.img 0x${filesize}
-hash sha256 0x04000000 0x${filesize} *0x10000000
-tpm2 pcr_extend 9 0x10000000
-
-#
-# flash-kernel: bootscr.rpi
-#
+##############################################################
 
 # Ubuntu Classic RPi U-Boot script (for armhf and arm64)
 
@@ -82,10 +46,10 @@ else
 fi
 fdt get value bootargs /chosen bootargs
 
-setenv bootargs " ${bootargs} quiet splash"
+setenv bootargs "@@LINUX_KERNEL_CMDLINE_DEFAULTS@@ ${bootargs} @@LINUX_KERNEL_CMDLINE@@"
+@@UBOOT_ENV_EXTRA@@
 
-
-
+@@UBOOT_PREBOOT_EXTRA@@
 
 setenv kernel_filename vmlinuz
 setenv core_state "/uboot/ubuntu/boot.sel"
@@ -160,13 +124,26 @@ for pathprefix in ${fk_image_locations}; do
 
     if load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} ${kernel_prefix}initrd.img; then
       setenv ramdisk_param "${ramdisk_addr_r}:${filesize}"
+      ##############################################################
+      # PCR9 Hash of the initrd
+      hash sha256 ${ramdisk_addr_r} 0x${filesize} *0x10000000
+      tpm2 pcr_extend 9 0x10000000
+      ##############################################################
     else
       setenv ramdisk_param "-"
     fi
+    ##############################################################
+    # PCR8 Hash of the kernel command line
+    env export 0x100000A0 bootargs
+    hash sha256 0x100000A0 0x${filesize} *0x10000000
+    tpm2 pcr_extend 8 0x10000000
+    # Extend with the kernel itself
+    hash sha256 ${kernel_addr_r} 0x${kernel_size} *0x10000000
+    tpm2 pcr_extend 8 0x10000000
+    ##############################################################
     for cmd in ${try_boot}; do
         echo "Booting Ubuntu (with ${cmd}) from ${devtype} ${devnum}:${partition}..."
         ${cmd} ${kernel_addr_r} ${ramdisk_param} ${fdt_addr_r}
     done
   fi
 done
-
