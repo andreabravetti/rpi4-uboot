@@ -6,7 +6,7 @@ That said:
 
 - PCRs from 0 to 3 and PCR6 are completely faked with random data, stored per device to preserve it.
 - PCR4, PCR5, and PCR7 may be almost fine, even if not sure about it and it's not the purpose of this work.
-- PCR8 and PCR9 are fine as they are extended by this u-boot script, even if not enforced and not trusted, and this part could be taken as a starting point for a real implementation.
+- PCR8 and PCR9 are extended by this u-boot script and this part could be taken as a starting point for a real implementation even if, right now, it's not to be trusted without any real measurement from previous stages.
 
 A big thank you to https://github.com/joholl/rpi4-uboot-tpm which I used to start.
 
